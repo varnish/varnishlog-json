@@ -1,0 +1,67 @@
+varnishtest "basic resp sanity checks"
+
+feature cmd jq
+
+server s1 {
+	rxreq
+	txresp -hdr "y: from_backend"
+} -start
+
+varnish v1 -vcl+backend {
+	sub vcl_backend_fetch {
+		unset bereq.http.baz;
+		set bereq.http.bar = "qux";
+		set bereq.http.x = "1";
+	}
+
+	sub vcl_backend_response {
+		set beresp.http.y = "ignored";
+		unset beresp.http.y;
+		set beresp.http.z = "will be overridden";
+		set beresp.http.z = "will be overridden too";
+		set beresp.http.z = "final";
+		set beresp.status = 210;
+	}
+} -start
+
+client c1 {
+	txreq -url "/foo" -hdr "bar: baz"
+	rxresp
+} -run
+
+# give some time for the logs to land (0.1s is overly generous)
+delay 0.1
+
+shell {
+${varnishlog-json_bin} -b -n ${v1_name} -d
+	t() {
+		if [ "$(${varnishlog-json_bin} -b -n ${v1_name} -d | jq -r $1)" = "$2" ]; then
+			echo "ok: $1 == $2"
+		else
+			echo "fail: $1 ($(${varnishlog-json_bin} -b -n ${v1_name} -d | jq -r $1)) != $2"
+			exit 1
+		fi
+	}
+
+	t .req.url /foo
+	t .req.method GET
+	t .req.proto HTTP/1.1
+	t '.req.headers["user-agent"]' c1
+	t .req.headers.bar qux
+	t .req.headers.x 1
+	t .req.headers.host 127.0.0.1
+
+	t .resp.status 200
+	t .resp.reason OK
+	t .resp.proto HTTP/1.1
+	t .resp.headers.y from_backend
+	t .resp.headers.z null
+
+	t .side backend
+	t .id 1002
+	t .vcl vcl1
+	t .backend.rAddr 127.0.0.1
+	t .backend.rPort ${s1_port}
+	t .backend.connReused false
+	t .client null
+}
