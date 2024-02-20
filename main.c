@@ -88,7 +88,18 @@ add_hdr(const char *s, cJSON *hdrs, struct vsb *vsb)
 	while (isspace(*c))
 		c++;
 
-	replaceString(hdrs, VSB_data(vsb), c);
+	cJSON *temp_s = cJSON_CreateString(c);
+	AN(temp_s);
+	if (cJSON_GetObjectItemCaseSensitive(hdrs, VSB_data(vsb))) {
+		cJSON *temp_a = cJSON_GetObjectItemCaseSensitive(hdrs, VSB_data(vsb));
+		AN(temp_a);
+		AN(cJSON_AddItemToArray(temp_a, temp_s));
+	} else {
+		cJSON *temp_a = cJSON_CreateArray();
+		AN(temp_a);
+		AN(cJSON_AddItemToArray(temp_a, temp_s));
+		AN(cJSON_AddItemToObject(hdrs, VSB_data(vsb), temp_a));
+	}
 }
 
 // log, openout, rotateout and flushout are from varnishlog.c
@@ -196,7 +207,10 @@ static int process_group(struct VSL_data *vsl,
 
 			switch (tag) {
 			case SLT_Begin:
-				cJSON_AddNumberToObject(transaction, "id", t->vxid);
+				VSB_clear(vsb);
+				VSB_printf(vsb, "%d", t->vxid);
+				VSB_finish(vsb);
+				cJSON_AddStringToObject(transaction, "id", VSB_data(vsb));
 				break;
 
 			case SLT_VCL_call:

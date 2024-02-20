@@ -55,28 +55,28 @@ We'll use `typescript` notation to describe the object shape:
 
 ``` typescript
 {
-    req: {                            // describes the request as seen by the remote (either client, or backend)
-        headers: Map<string, string>, // keys (header names) are lowercase, this map is built using ReqHeader,
-                                      // BereqHeader, RespUnset, and BerespUnset tags
-        method: string,               // ReqMethod, BereqMethod
-        proto: string,                // ReqProtocol, BereqProtocol
-        hdrBytes: number,             // ReqAcct, BereqAcct
-        bodyBytes: number,            // ^ same
+    req: {                                      // describes the request as seen by the remote (either client, or backend)
+        headers: Map<string, Array<string>>,    // keys (header names) are lowercase, this map is built using ReqHeader,
+                                                // BereqHeader, RespUnset, and BerespUnset tags
+        method: string,                         // ReqMethod, BereqMethod
+        proto: string,                          // ReqProtocol, BereqProtocol
+        hdrBytes: number,                       // ReqAcct, BereqAcct
+        bodyBytes: number,                      // ^ same
     },
-    "resp": {                         // describes the remote as seen by the remote
-        headers: Map<string, string>, // keys (header names) are lowercase, uses ReqHeader, BereqHeader, RespUnset,
-                                      // and BerespUnset
-        proto: string,                // RespProtocol, BerespProtocol
-        status: number,               // RespStatus, BerespStatus
-        reason: string,               // RespReason, BerespReason,
-        hdrBytes: number,             // ReqAcct, BereqAcct
-        bodyBytes: number,            // ^ same
+    resp: {                                     // describes the remote as seen by the remote
+        headers: Map<string, Array<string>>,    // keys (header names) are lowercase, uses ReqHeader, BereqHeader, RespUnset,
+                                                // and BerespUnset
+        proto: string,                          // RespProtocol, BerespProtocol
+        status: number,                         // RespStatus, BerespStatus
+        reason: string,                         // RespReason, BerespReason,
+        hdrBytes: number,                       // ReqAcct, BereqAcct
+        bodyBytes: number,                      // ^ same
     },
     timeline: Array<{name: string, timestamp: number}> // Timestamp
     side: "backend" | "client",
-    id: number,                       // the transaction's vxid
+    id: string,                       // the transaction's vxid
     vcl:                              // VCL_use
-    client: {                         // ReqStart
+    client?: {                        // ReqStart
         rAddr: string,
         rPort: number,
         sock: string,

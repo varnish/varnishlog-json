@@ -21,7 +21,7 @@ varnish v1 -vcl {
 } -start
 
 client c1 {
-	txreq -url "/foo" -hdr "bar: baz"
+	txreq -url "/foo" -hdr "bar: baz" -hdr "bar: qux" -hdr "bar: quxx"
 	rxresp
 } -run
 
@@ -42,16 +42,18 @@ ${varnishlog-json_bin} -c -n ${v1_name} -dp
 	t .req.url /foo
 	t .req.method GET
 	t .req.proto HTTP/1.1
-	t '.req.headers["user-agent"]' c1
-	t .req.headers.bar baz
-	t .req.headers.x "null"
-	t .req.headers.host 127.0.0.1
+	t '.req.headers["user-agent"][0]' c1
+	t .req.headers.bar[0] baz
+	t .req.headers.bar[1] qux
+	t .req.headers.bar[2] quxx
+	t .req.headers.x[0] "null"
+	t .req.headers.host[0] 127.0.0.1
 
 	t .resp.status 200
 	t .resp.reason OK
 	t .resp.proto HTTP/1.1
-	t .resp.headers.y "null"
-	t .resp.headers.z "final"
+	t .resp.headers.y[0] "null"
+	t .resp.headers.z[0] "final"
 
 	t .side client
 	t .id 1001

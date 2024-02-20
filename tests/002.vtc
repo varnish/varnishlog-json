@@ -46,16 +46,16 @@ ${varnishlog-json_bin} -b -n ${v1_name} -d
 	t .req.url /foo
 	t .req.method GET
 	t .req.proto HTTP/1.1
-	t '.req.headers["user-agent"]' c1
-	t .req.headers.bar qux
-	t .req.headers.x 1
-	t .req.headers.host 127.0.0.1
+	t '.req.headers["user-agent"][0]' c1
+	t .req.headers.bar[0] qux
+	t .req.headers.x[0] 1
+	t .req.headers.host[0] 127.0.0.1
 
 	t .resp.status 200
 	t .resp.reason OK
 	t .resp.proto HTTP/1.1
-	t .resp.headers.y from_backend
-	t .resp.headers.z null
+	t .resp.headers.y[0] from_backend
+	t .resp.headers.z[0] null
 
 	t .side backend
 	t .id 1002
