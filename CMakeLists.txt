@@ -6,6 +6,8 @@ find_package(PkgConfig)
 pkg_check_modules(VARNISH REQUIRED IMPORTED_TARGET varnishapi>6.0)
 pkg_check_modules(CJSON REQUIRED IMPORTED_TARGET libcjson)
 
+add_compile_options(-Wall -Wextra -Wpedantic)
+
 # what's in our executable
 add_executable(varnishlog-json main.c varnishlog-json_options.h)
 # link against the varnish libraries

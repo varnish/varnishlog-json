@@ -159,6 +159,8 @@ static int process_group(struct VSL_data *vsl,
 	const char *data;
 	enum VSL_tag_e tag;
 
+	(void)priv;
+
 	// go through all transaction
 	for (struct VSL_transaction *t = trans[0]; t != NULL; t = *++trans) {
 		cJSON *transaction = cJSON_CreateObject();
@@ -208,7 +210,7 @@ static int process_group(struct VSL_data *vsl,
 			switch (tag) {
 			case SLT_Begin:
 				VSB_clear(vsb);
-				VSB_printf(vsb, "%d", t->vxid);
+				VSB_printf(vsb, "%ld", t->vxid);
 				VSB_finish(vsb);
 				cJSON_AddStringToObject(transaction, "id", VSB_data(vsb));
 				break;
@@ -286,7 +288,7 @@ static int process_group(struct VSL_data *vsl,
 
 			case SLT_ReqAcct:
 				/* passthrough */
-			case SLT_BereqAcct:
+			case SLT_BereqAcct: {
 				int req_hdr_len, req_body_len, resp_hdr_len, resp_body_len, l1, l2;
 				// we don't care about l1 and l2, but we need l1 to get to resp_hdr_len
 				// and resp_body_len, so we might as well just read everything as a
@@ -297,8 +299,9 @@ static int process_group(struct VSL_data *vsl,
 				cJSON_AddNumberToObject(resp, "hdrBytes", resp_hdr_len);
 				cJSON_AddNumberToObject(resp, "bodyBytes", resp_body_len);
 				break;
+			}
 
-			case SLT_VCL_Log:
+			case SLT_VCL_Log: {
 				cJSON *temp_a;
 				cJSON *temp_s = cJSON_CreateString(data);
 				AN(temp_s);
@@ -313,6 +316,7 @@ static int process_group(struct VSL_data *vsl,
 				}
 
 				break;
+			}
 
 			case SLT_Timestamp:
 				VSB_clear(vsb);
@@ -330,7 +334,7 @@ static int process_group(struct VSL_data *vsl,
 				cJSON_AddItemToArray(timeline, t);
 				break;
 
-			case SLT_BackendOpen:
+			case SLT_BackendOpen: {
 				cJSON *backend = cJSON_AddObjectToObject(transaction, "backend");
 
 				tok_init(&c, data);
@@ -345,8 +349,9 @@ static int process_group(struct VSL_data *vsl,
 				AN(tok_next(&c, vsb));
 				cJSON_AddBoolToObject(backend, "connReused", strcmp(VSB_data(vsb), "reused") ? 0 : 1);
 				break;
+			}
 
-			case SLT_ReqStart:
+			case SLT_ReqStart: {
 				cJSON *client = cJSON_AddObjectToObject(transaction, "client");
 				tok_init(&c, data);
 				AN(tok_next(&c, vsb));
@@ -356,6 +361,7 @@ static int process_group(struct VSL_data *vsl,
 				AN(tok_next(&c, vsb));
 				cJSON_AddStringToObject(client, "sock", VSB_data(vsb));
 				break;
+			}
 			case SLT_End:
 				if (!strcmp(data, "synth"))
 					replaceString(transaction,
@@ -438,6 +444,7 @@ int main(int argc, char **argv)
 
 
 	vut->dispatch_f = process_group;
+	vut->idle_f = flushout;
 
 	vsb = VSB_new_auto();;
 
@@ -447,6 +454,8 @@ int main(int argc, char **argv)
 	VUT_Fini(&vut);
 
 	VSB_destroy(&vsb);
+
+	(void)flushout(NULL);
 
 	return (0);
 }
