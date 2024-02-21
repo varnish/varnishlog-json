@@ -298,6 +298,22 @@ static int process_group(struct VSL_data *vsl,
 				cJSON_AddNumberToObject(resp, "bodyBytes", resp_body_len);
 				break;
 
+			case SLT_VCL_Log:
+				cJSON *temp_a;
+				cJSON *temp_s = cJSON_CreateString(data);
+				AN(temp_s);
+				if ((temp_a = cJSON_GetObjectItemCaseSensitive(transaction, "logs"))) {
+					AN(temp_a);
+					AN(cJSON_AddItemToArray(temp_a, temp_s));
+				} else {
+					temp_a = cJSON_CreateArray();
+					AN(temp_a);
+					AN(cJSON_AddItemToArray(temp_a, temp_s));
+					AN(cJSON_AddItemToObject(transaction, "logs", temp_a));
+				}
+
+				break;
+
 			case SLT_Timestamp:
 				VSB_clear(vsb);
 				cJSON *t = cJSON_CreateObject();

@@ -3,15 +3,19 @@ varnishtest "basic req sanity checks"
 feature cmd jq
 
 varnish v1 -vcl {
+	import std;
+
 	backend be none;
 	sub vcl_recv {
 		unset req.http.baz;
 		set req.http.bar = "qux";
 		set req.http.x = "1";
+		std.log("in recv");
 		return (synth(200));
 	}
 
 	sub vcl_synth {
+		std.log("in synth");
 		set resp.http.y = "ignored";
 		unset resp.http.y;
 		set resp.http.z = "will be overridden";
@@ -60,4 +64,7 @@ ${varnishlog-json_bin} -c -n ${v1_name} -dp
 	t .vcl vcl1
 	t .client.rAddr 127.0.0.1
 	t .client.sock a0
+
+	t .logs[0] "in recv"
+	t .logs[1] "in synth"
 }

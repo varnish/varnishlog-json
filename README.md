@@ -74,20 +74,21 @@ We'll use `typescript` notation to describe the object shape:
     },
     timeline: Array<{name: string, timestamp: number}> // Timestamp
     side: "backend" | "client",
-    id: string,                       // the transaction's vxid
-    vcl:                              // VCL_use
-    client?: {                        // ReqStart
+    id: string,                     // the transaction's vxid
+    vcl:                            // VCL_use
+    client?: {                      // ReqStart
         rAddr: string,
         rPort: number,
         sock: string,
     },
-    backend?: {                       // BackendOpen (backend-only)
+    backend?: {                     // BackendOpen (backend-only)
         name: string,
         rAddr: string,
         rPort: number,
         connReused: bool,
-    storage?: string,                  // Storage (backend-only)
-    error?: string,                    // FetchError, but also if the VSL transation was incomplete
+    storage?: string,               // Storage (backend-only)
+    error?: string,                 // FetchError, but also if the VSL transation was incomplete
+    logs: Array<string>,            // VCL_Log 
 }
 ```
 
