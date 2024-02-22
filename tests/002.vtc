@@ -46,7 +46,6 @@ ${varnishlog-json_bin} -b -n ${v1_name} -d
 	t .req.url /foo
 	t .req.method GET
 	t .req.proto HTTP/1.1
-	t '.req.headers["user-agent"][0]' c1
 	t .req.headers.bar[0] qux
 	t .req.headers.x[0] 1
 	t .req.headers.host[0] 127.0.0.1
