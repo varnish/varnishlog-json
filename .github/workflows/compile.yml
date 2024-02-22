@@ -14,4 +14,4 @@ jobs:
           sudo apt-get install -y cmake gcc jq libcjson-dev python3-docutils varnish varnish-dev
           cmake -B build
           cmake --build build/
-          ctest --test-dir build/
+          ctest --test-dir build/ --output-on-failure
