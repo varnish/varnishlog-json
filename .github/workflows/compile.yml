@@ -1,0 +1,14 @@
+name: Quick test
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          set -ex
+          curl -s https://packagecloud.io/install/repositories/varnishcache/varnish74/script.deb.sh | sudo bash
+          sudo apt-get install -y cmake gcc jq libcjson-dev python3-docutils varnish varnish-dev
+          cmake -B build
+          cmake --build build/
+          ctest --test-dir build/
