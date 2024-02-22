@@ -2,6 +2,9 @@ name: Quick test
 on: [push]
 jobs:
   build:
+    strategy:
+      matrix:
+        version: ["73", "74", "60lts"]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
