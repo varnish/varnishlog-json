@@ -402,12 +402,20 @@ static int process_group(struct VSL_data *vsl,
 int main(int argc, char **argv)
 {
 	int opt;
+	bool bc_set = false;
 	vut = VUT_InitProg(argc, argv, &vopt_spec);
 
 	while ((opt = getopt(argc, argv, vopt_spec.vopt_optstring)) != -1) {
 		switch (opt) {
 		case 'a':
 			LOG.a_opt = 1;
+			break;
+		case 'b': /* backend mode */
+			/* passthrough */
+		case 'c': /* client mode */
+			bc_set = true;
+			/* fallthrough */
+			AN(VUT_Arg(vut, opt, NULL));
 			break;
 		case 'h':
 			VUT_Usage(vut, &vopt_spec, 0);
@@ -424,6 +432,10 @@ int main(int argc, char **argv)
 		}
 
 	}
+
+	/* default is client mode: */
+	if (!bc_set)
+		AN(VUT_Arg(vut, 'c', NULL));
 
 	if (optind != argc)
 		VUT_Usage(vut, &vopt_spec, 1);
