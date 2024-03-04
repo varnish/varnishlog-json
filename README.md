@@ -89,6 +89,11 @@ We'll use `typescript` notation to describe the object shape:
     storage?: string,               // Storage (backend-only)
     error?: string,                 // FetchError, but also if the VSL transation was incomplete
     logs: Array<string>,            // VCL_Log 
+    links: Array<{                  // Link
+        type: string,
+        id: string,
+        reason: string,
+    }>,
 }
 ```
 

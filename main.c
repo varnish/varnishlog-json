@@ -91,16 +91,12 @@ add_hdr(const char *s, cJSON *hdrs, struct vsb *vsb)
 
 	cJSON *temp_s = cJSON_CreateString(c);
 	AN(temp_s);
-	if (cJSON_GetObjectItemCaseSensitive(hdrs, VSB_data(vsb))) {
-		cJSON *temp_a = cJSON_GetObjectItemCaseSensitive(hdrs, VSB_data(vsb));
-		AN(temp_a);
-		AN(cJSON_AddItemToArray(temp_a, temp_s));
-	} else {
-		cJSON *temp_a = cJSON_CreateArray();
-		AN(temp_a);
-		AN(cJSON_AddItemToArray(temp_a, temp_s));
-		AN(cJSON_AddItemToObject(hdrs, VSB_data(vsb), temp_a));
+	cJSON *temp_a = cJSON_GetObjectItemCaseSensitive(hdrs, VSB_data(vsb));
+	if (!temp_a) {
+		temp_a = cJSON_AddArrayToObject(hdrs, VSB_data(vsb));
 	}
+	AN(temp_a);
+	AN(cJSON_AddItemToArray(temp_a, temp_s));
 }
 
 // log, openout, rotateout and flushout are from varnishlog.c
@@ -312,22 +308,35 @@ static int process_group(struct VSL_data *vsl,
 			}
 
 			case SLT_VCL_Log: {
-				cJSON *temp_a;
 				cJSON *temp_s = cJSON_CreateString(data);
 				AN(temp_s);
-				if ((temp_a = cJSON_GetObjectItemCaseSensitive(transaction, "logs"))) {
-					AN(temp_a);
-					AN(cJSON_AddItemToArray(temp_a, temp_s));
-				} else {
-					temp_a = cJSON_CreateArray();
-					AN(temp_a);
-					AN(cJSON_AddItemToArray(temp_a, temp_s));
-					AN(cJSON_AddItemToObject(transaction, "logs", temp_a));
+				cJSON *temp_a = cJSON_GetObjectItemCaseSensitive(transaction, "logs");
+				if (!temp_a) {
+					temp_a = cJSON_AddArrayToObject(transaction, "logs");
 				}
+				AN(temp_a);
+				AN(cJSON_AddItemToArray(temp_a, temp_s));
 
 				break;
 			}
 
+			case SLT_Link: {
+				cJSON *links = cJSON_GetObjectItemCaseSensitive(transaction, "links");
+				if (!links) {
+					links = cJSON_AddArrayToObject(transaction, "links");
+				}
+				cJSON *t = cJSON_CreateObject();
+				tok_init(&c, data);
+				AN(tok_next(&c, vsb));
+				cJSON_AddStringToObject(t, "type", VSB_data(vsb));
+				AN(tok_next(&c, vsb));
+				cJSON_AddStringToObject(t, "id", VSB_data(vsb));
+				AN(tok_next(&c, vsb));
+				cJSON_AddStringToObject(t, "reason", VSB_data(vsb));
+
+				cJSON_AddItemToArray(links, t);
+				break;
+			}
 			case SLT_Timestamp:
 				VSB_clear(vsb);
 				cJSON *t = cJSON_CreateObject();
