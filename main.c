@@ -154,7 +154,7 @@ flushout(struct VUT *v)
 static int process_group(struct VSL_data *vsl,
 		struct VSL_transaction * const trans[], void *priv)
 {
-	int i, n_transactions = 0;
+	int i;
 	bool req_done, resp_done;
 	const char *c;
 	const char *data;
@@ -164,9 +164,7 @@ static int process_group(struct VSL_data *vsl,
 
 	(void)priv;
 
-	if (arrays) {
-		transaction_array = cJSON_CreateArray();
-	}
+	transaction_array = cJSON_CreateArray();
 
 	// go through all transaction
 	for (struct VSL_transaction *t = trans[0]; t != NULL; t = *++trans) {
@@ -183,8 +181,8 @@ static int process_group(struct VSL_data *vsl,
 			continue;
 		}
 
-		n_transactions++;
 		transaction = cJSON_CreateObject();
+		cJSON_AddItemToArray(transaction_array, transaction);
 		cJSON_AddStringToObject(transaction, "side", side);
 
 		cJSON *req = cJSON_AddObjectToObject(transaction, "req");
@@ -204,14 +202,15 @@ static int process_group(struct VSL_data *vsl,
 			// move the cursor to the next record
 			i = VSL_Next(t->c);
 			if (i < 0) {		// error occured
-				cJSON_Delete(transaction);
+				cJSON_Delete(transaction_array);
 				return (i);
 			}
 			if (i == 0)		// we've reached the last record
 				break;
 			// -i/-I check, notably
-			if (!VSL_Match(vsl, t->c))
+			if (!VSL_Match(vsl, t->c)) {
 				continue;
+			}
 
 			const uint32_t *p = t->c->rec.ptr;
 			// extract various fields from the record
@@ -377,11 +376,11 @@ static int process_group(struct VSL_data *vsl,
 				if (!strcmp(data, "synth"))
 					replaceString(transaction,
 					    "error", "truncated log");
+				break;
 			default:
 				break;
 			}
 		}
-
 
 		// we still need to go through the flattened headers
 		// to put them in an object
@@ -396,28 +395,26 @@ static int process_group(struct VSL_data *vsl,
 		cJSON_DeleteItemFromObject(resp, "headers_tmp");
 
 		if (arrays) {
-			cJSON_AddItemToArray(transaction_array, transaction);
 		} else {
 			break;
 		}
 	}
 
-	cJSON *top = arrays ? transaction_array : transaction;
-
-	if (!n_transactions)
+	if (!cJSON_GetArraySize(transaction_array))
 		return (0);
 
-	AN(top);
+	cJSON *obj = arrays ? transaction_array : cJSON_GetArrayItem(transaction_array, 0);
+	AN(obj);
 
 	// print the resulting object
 	char *s;
 	if (pretty)
-		s = cJSON_Print(top);
+		s = cJSON_Print(obj);
 	else
-		s = cJSON_PrintUnformatted(top);
+		s = cJSON_PrintUnformatted(obj);
 	printf("%s\n", s);
 	free(s);
-	cJSON_Delete(top);
+	cJSON_Delete(transaction_array);
 
 	// all went well, get out
 	return (0);
@@ -470,7 +467,7 @@ int main(int argc, char **argv)
 	}
 
 	/* default is client mode: */
-	if (!bc_set)
+	if (!bc_set && !arrays)
 		AN(VUT_Arg(vut, 'c', NULL));
 
 	if (optind != argc)
