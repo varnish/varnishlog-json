@@ -92,6 +92,8 @@ We'll use `typescript` notation to describe the object shape:
 }
 ```
 
+If you use `-g request`, instead of one object per line, `varnishlog-json` will out an array of all objects in the group.
+
 # Docker container
 
 You can build a `docker` container on top of the [varnish image](https://hub.docker.com/_/varnish):

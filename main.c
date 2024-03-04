@@ -22,6 +22,7 @@
 #include <varnish/vut.h>
 
 bool pretty;
+bool arrays;
 struct VUT *vut;
 struct vsb *vsb;
 
@@ -153,17 +154,38 @@ flushout(struct VUT *v)
 static int process_group(struct VSL_data *vsl,
 		struct VSL_transaction * const trans[], void *priv)
 {
-	int i;
+	int i, n_transactions = 0;
 	bool req_done, resp_done;
 	const char *c;
 	const char *data;
 	enum VSL_tag_e tag;
+	cJSON *transaction_array = NULL;
+	cJSON *transaction = NULL;
 
 	(void)priv;
 
+	if (arrays) {
+		transaction_array = cJSON_CreateArray();
+	}
+
 	// go through all transaction
 	for (struct VSL_transaction *t = trans[0]; t != NULL; t = *++trans) {
-		cJSON *transaction = cJSON_CreateObject();
+		char *side;
+
+		switch (t->type) {
+		case VSL_t_bereq:
+			side = "backend";
+			break;
+		case VSL_t_req:
+			side = "client";
+			break;
+		default:
+			continue;
+		}
+
+		n_transactions++;
+		transaction = cJSON_CreateObject();
+		cJSON_AddStringToObject(transaction, "side", side);
 
 		cJSON *req = cJSON_AddObjectToObject(transaction, "req");
 		cJSON *req_hdrs = cJSON_AddObjectToObject(req, "headers");
@@ -176,17 +198,6 @@ static int process_group(struct VSL_data *vsl,
 		cJSON *timeline = cJSON_AddArrayToObject(transaction, "timeline");
 
 		req_done = resp_done = false;
-
-		switch (t->type) {
-		case VSL_t_bereq:
-			cJSON_AddStringToObject(transaction, "side", "backend");
-			break;
-		case VSL_t_req:
-			cJSON_AddStringToObject(transaction, "side", "client");
-			break;
-		default:
-			continue;
-		}
 
 		// loop until told otherwise
 		while (1) {
@@ -384,16 +395,29 @@ static int process_group(struct VSL_data *vsl,
 			add_hdr(h->string, resp_hdrs, vsb);
 		cJSON_DeleteItemFromObject(resp, "headers_tmp");
 
-		// print the resulting object
-		char *s;
-		if (pretty)
-			s = cJSON_Print(transaction);
-		else
-			s = cJSON_PrintUnformatted(transaction);
-		printf("%s\n", s);
-		free(s);
-		cJSON_Delete(transaction);
+		if (arrays) {
+			cJSON_AddItemToArray(transaction_array, transaction);
+		} else {
+			break;
+		}
 	}
+
+	cJSON *top = arrays ? transaction_array : transaction;
+
+	if (!n_transactions)
+		return (0);
+
+	AN(top);
+
+	// print the resulting object
+	char *s;
+	if (pretty)
+		s = cJSON_Print(top);
+	else
+		s = cJSON_PrintUnformatted(top);
+	printf("%s\n", s);
+	free(s);
+	cJSON_Delete(top);
 
 	// all went well, get out
 	return (0);
@@ -416,6 +440,18 @@ int main(int argc, char **argv)
 			bc_set = true;
 			/* fallthrough */
 			AN(VUT_Arg(vut, opt, NULL));
+			break;
+		case 'g':
+			if (!strcmp("vxid", optarg))
+				arrays = false;
+			else if (!strcmp("request", optarg))
+				arrays = true;
+			else {
+				printf("Error: -g only supports \"vxid\" and \"request\"\n\n");
+				VUT_Usage(vut, &vopt_spec, 1);
+			}
+			arrays = strcmp("vxid", optarg);
+			VUT_Arg(vut, opt, optarg);
 			break;
 		case 'h':
 			VUT_Usage(vut, &vopt_spec, 0);
