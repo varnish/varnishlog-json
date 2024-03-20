@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20.0)
+cmake_minimum_required(VERSION 3.16.0)
 project(varnishlog-json C)
 
 # just use pkg-config to find the varnish libs
