@@ -61,7 +61,7 @@ tok_next(const char **p, struct vsb *vsb)
 void
 replaceString(cJSON *object, const char *field, const char *value)
 {
-	if (cJSON_GetObjectItemCaseSensitive(object, value)) {
+	if (cJSON_GetObjectItemCaseSensitive(object, field)) {
 		cJSON *temp_s = cJSON_CreateString(value);
 		AN(temp_s);
 		cJSON_ReplaceItemInObjectCaseSensitive(object, field, temp_s);
