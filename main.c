@@ -45,12 +45,12 @@ tok_next(const char **p, struct vsb *vsb)
 
 	b = *p;
 	VSB_clear(vsb);
-	while (b && (isspace(*b) || *b == ':'))
+	while (b && (isspace(*b)))
 		b++;
 	if (!*b)
 		return(0);
 	e = b + 1;
-	while (*e && !(isspace(*e) || *e == ':'))
+	while (*e && !(isspace(*e)))
 		e++;
 	VSB_bcat(vsb, b, e - b);
 	VSB_finish(vsb);
