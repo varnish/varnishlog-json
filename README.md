@@ -75,7 +75,7 @@ We'll use `typescript` notation to describe the object shape:
     timeline: Array<{name: string, timestamp: number}> // Timestamp
     side: "backend" | "client",
     id: string,                     // the transaction's vxid
-    vcl:                            // VCL_use
+    vcl: string                     // VCL_use
     client?: {                      // ReqStart
         rAddr: string,
         rPort: number,
