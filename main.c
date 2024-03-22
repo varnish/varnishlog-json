@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <math.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -252,9 +253,6 @@ static int process_group(struct VSL_data *vsl,
 			save_data(RespReason, !resp_done, resp, "reason");
 			save_data(BerespReason, !resp_done, resp, "reason");
 
-			save_data(RespStatus, !resp_done, resp, "status");
-			save_data(BerespStatus, !resp_done, resp, "status");
-
 			save_data(RespProtocol, !resp_done, resp, "proto");
 			save_data(BerespProtocol, !resp_done, resp, "proto");
 
@@ -264,6 +262,18 @@ static int process_group(struct VSL_data *vsl,
 
 			save_data(Storage, true, transaction, "storage");
 
+			case SLT_RespStatus:
+				/* passthrough */
+			case SLT_BerespStatus: {
+				double status = strtod(data, NULL);
+				// Varnish won't accept those, we shouldn't either
+				assert(status > 0);
+				assert(status < 1000);
+				assert(status == round(status));
+				if (!resp_done)
+					cJSON_AddNumberToObject(resp, "status", status);
+				break;
+			}
 			case SLT_ReqHeader:
 				/* passthrough */
 			case SLT_BereqHeader:

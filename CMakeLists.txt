@@ -10,8 +10,8 @@ add_compile_options(-Wall -Wextra -Wpedantic)
 
 # what's in our executable
 add_executable(varnishlog-json main.c varnishlog-json_options.h)
-# link against the varnish libraries
-target_link_libraries(varnishlog-json PkgConfig::VARNISH cjson)
+# link against various libraries
+target_link_libraries(varnishlog-json PkgConfig::VARNISH cjson m)
 # need this to find varnish-varnishlog-json_options.h
 target_include_directories(varnishlog-json PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 install(TARGETS varnishlog-json)
