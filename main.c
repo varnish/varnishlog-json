@@ -353,6 +353,11 @@ static int process_group(struct VSL_data *vsl,
 
 				tok_init(&c, data);
 				AN(tok_next(&c, vsb));
+				char *p = VSB_len(vsb) ? VSB_data(vsb) + VSB_len(vsb) - 1 : NULL;
+				if (p != NULL) {
+					assert(*p == ':');
+					*p = '\0';
+				}
 				cJSON_AddStringToObject(t, "name", VSB_data(vsb));
 
 				// float conversion is a mess, so we just grab the timestamp as-is,
