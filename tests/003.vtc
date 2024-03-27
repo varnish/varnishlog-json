@@ -1,0 +1,78 @@
+varnishtest "fail/abandon"
+
+feature cmd jq
+
+server s1 {
+	rxreq
+	txresp
+} -start
+
+varnish v1 -vcl+backend {
+	import std;
+
+	backend black_hole none;
+
+	sub vcl_recv {
+		if (req.url == "/recv_fail") {
+			return (fail);
+		} else {
+			return (pass);
+		}
+	}
+
+	sub vcl_backend_fetch {
+		set bereq.backend = s1;
+		if (bereq.url == "/fetch_fail") {
+			return (fail);
+		} else if (bereq.url == "/fetch_abandon" || bereq.url == "/fetch_error") {
+			set bereq.backend = black_hole;
+			return (fetch);
+		} else {
+			return (fetch);
+		}
+	}
+
+	sub vcl_backend_error {
+		if (bereq.url == "/fetch_abandon") {
+			return(abandon);
+		}
+	}
+} -start
+
+client c1 {
+	txreq -url "/recv_fail"
+	rxresp
+} -run
+
+client c1 {
+	txreq -url "/fetch_fail"
+	rxresp
+} -run
+
+
+client c1 {
+	txreq -url "/fetch_abandon"
+	rxresp
+} -run
+
+client c1 {
+	txreq -url "/fetch_error"
+	rxresp
+} -run
+
+# give some time for the logs to land (0.1s is overly generous)
+delay 0.1
+
+shell {
+	t() {
+		set -ex
+		test "$(${varnishlog-json_bin} -$2 -n ${v1_name} -d | jq -r "select(.req.url == \"$1\") | .handling" )" = "$3"
+	}
+
+	${varnishlog-json_bin} -bc -n ${v1_name} -d
+
+	t /recv_fail c fail
+	t /fetch_fail b fail
+	t /fetch_abandon b abandon
+	t /fetch_error b error
+}

@@ -166,6 +166,7 @@ static int process_group(struct VSL_data *vsl,
 	// go through all transaction
 	for (struct VSL_transaction *t = trans[0]; t != NULL; t = *++trans) {
 		char *side;
+		char *handling = "incomplete";
 
 		switch (t->type) {
 		case VSL_t_bereq:
@@ -223,16 +224,42 @@ static int process_group(struct VSL_data *vsl,
 				break;
 
 			case SLT_VCL_call:
-				if (t->type == VSL_t_req)
+				if (t->type == VSL_t_req) {
 					req_done = true;
-				else if (!strcmp(data, "BACKEND_RESPONSE") || !strcmp(data, "BACKEND_ERROR"))
+				} else if (!strcmp(data, "BACKEND_RESPONSE") || !strcmp(data, "BACKEND_ERROR")) {
 					resp_done = true;
+				}
+
+				// don't overwrite handling if we're already erroring
+				if (!strcmp(handling, "fail") || !strcmp(handling, "abandon")) {
+					break;
+				} else if (!strcmp(data, "HIT")) {
+					handling = "hit";
+				} else if (!strcmp(data, "MISS")) {
+					handling = "miss";
+				} else if (!strcmp(data, "PASS")) {
+					handling = "pass";
+				} else if (!strcmp(data, "SYNTH")) {
+					handling = "synth";
+				} else if (!strcmp(data, "BACKEND_RESPONSE")) {
+					handling = "fetched";
+				} else if (!strcmp(data, "BACKEND_ERROR")) {
+					handling = "error";
+				} else if (!strcmp(data, "SYNTH")) {
+					handling = "synth";
+				}
 				break;
 
 			case SLT_VCL_return:
 				if (t->type == VSL_t_bereq &&
-				   (!strcmp(data, "fetch") || !strcmp(data, "error")))
+				   (!strcmp(data, "fetch") || !strcmp(data, "error"))) {
 					req_done = true;
+				}
+				if (!strcmp(data, "fail")) {
+					handling = "fail";
+				} else if (!strcmp(data, "abandon")) {
+					handling = "abandon";
+				}
 				break;
 
 #define save_data(tag, cond, obj, field) 				\
@@ -405,6 +432,9 @@ static int process_group(struct VSL_data *vsl,
 				break;
 			}
 		}
+
+		// commit handling
+		cJSON_AddStringToObject(transaction, "handling", handling);
 
 		// we still need to go through the flattened headers
 		// to put them in an object
