@@ -255,7 +255,11 @@ static int process_group(struct VSL_data *vsl,
 				   (!strcmp(data, "fetch") || !strcmp(data, "error"))) {
 					req_done = true;
 				}
-				if (!strcmp(data, "fail")) {
+				if (!strcmp(data, "retry")) {
+					handling = "retry";
+				} else if (!strcmp(data, "restart")) {
+					handling = "restart";
+				} else if (!strcmp(data, "fail")) {
 					handling = "fail";
 				} else if (!strcmp(data, "abandon")) {
 					handling = "abandon";
