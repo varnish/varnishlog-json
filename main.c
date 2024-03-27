@@ -239,6 +239,8 @@ static int process_group(struct VSL_data *vsl,
 					handling = "miss";
 				} else if (!strcmp(data, "PASS")) {
 					handling = "pass";
+				} else if (!strcmp(data, "PIPE")) {
+					handling = "pipe";
 				} else if (!strcmp(data, "SYNTH")) {
 					handling = "synth";
 				} else if (!strcmp(data, "BACKEND_RESPONSE")) {
