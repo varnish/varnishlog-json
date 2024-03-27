@@ -286,6 +286,7 @@ static int process_group(struct VSL_data *vsl,
 			save_data(VCL_use, true, transaction, "vcl");
 
 			save_data(FetchError, true, transaction, "error");
+			save_data(VCL_Error, true, transaction, "error");
 
 			save_data(Storage, true, transaction, "storage");
 

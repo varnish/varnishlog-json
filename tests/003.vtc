@@ -64,15 +64,29 @@ client c1 {
 delay 0.1
 
 shell {
+	# arguments: URL SIDE FIELD EXPECTED_VALUE
 	t() {
 		set -ex
-		test "$(${varnishlog-json_bin} -$2 -n ${v1_name} -d | jq -r "select(.req.url == \"$1\") | .handling" )" = "$3"
+		test "$(${varnishlog-json_bin} -$2 -n ${v1_name} -d | jq -r "select(.req.url == \"$1\") | .$3" )" = "$4"
 	}
 
 	${varnishlog-json_bin} -bc -n ${v1_name} -d
 
-	t /recv_fail c fail
-	t /fetch_fail b fail
-	t /fetch_abandon b abandon
-	t /fetch_error b error
+	t /recv_fail c handling fail
+	t /recv_fail c error "Failed from VCL"
+
+	t /fetch_fail b handling fail
+	t /fetch_fail b error "Failed from VCL"
+	t /fetch_fail c handling synth
+	t /fetch_fail c error null
+
+	t /fetch_abandon b handling abandon
+	t /fetch_abandon b error "No backend"
+	t /fetch_abandon c handling synth
+	t /fetch_abandon c error null
+
+	t /fetch_error b handling error
+	t /fetch_error b error "No backend"
+	t /fetch_error c handling pass
+	t /fetch_error c error null
 }
