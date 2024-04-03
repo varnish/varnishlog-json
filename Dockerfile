@@ -1,4 +1,4 @@
-FROM varnish:7.4
+FROM varnish:7.5
 
 USER root
 COPY . /workdir
