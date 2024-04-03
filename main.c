@@ -19,8 +19,8 @@
 #include "vapi/vsl.h"
 #include "vapi/voptget.h"
 #include "vas.h"
-#include <varnish/vsb.h>
-#include <varnish/vut.h>
+#include <vsb.h>
+#include <vut.h>
 
 bool pretty;
 bool arrays;

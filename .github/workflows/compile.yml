@@ -1,17 +1,53 @@
 name: Quick test
 on: [push]
 jobs:
-  build:
+  build_against_packages:
     strategy:
       matrix:
-        version: ["73", "74"]
+        version: ["60lts", "73", "74", "75"]
     runs-on: ubuntu-latest
-    steps:
+    steps :
       - uses: actions/checkout@v4
       - run: |
           set -ex
+          cat << -EOF > /tmp/pref
+               Package: *
+               Pin: origin "packagecloud.io"
+               Pin-Priority: 999
+          EOF
+          sudo mv /tmp/pref /etc/apt/preferences.d/varnish
           curl -s https://packagecloud.io/install/repositories/varnishcache/varnish${{ matrix.version }}/script.deb.sh | sudo bash
           sudo apt-get install -y cmake gcc jq libcjson-dev python3-docutils varnish varnish-dev
+          cmake -B build
+          cmake --build build/
+          ctest --test-dir build/ --output-on-failure
+
+  build_against_master:
+    runs-on: ubuntu-latest
+    steps :
+      - uses: actions/checkout@v4
+      - run: |
+          sudo apt-get install -y \
+              automake \
+              cmake \
+              gcc \
+              libjemalloc-dev \
+              jq \
+              libcjson-dev \
+              libedit-dev \
+              make \
+              libpcre2-dev \
+              python3-docutils \
+              python3-sphinx
+      - run: |
+          git clone https://github.com/varnishcache/varnish-cache.git
+          cd varnish-cache
+          sed -i 's/^AC_INIT.*/AC_INIT([Varnish], ['$(date +%Y%m%d)'], [varnish-dev@varnish-cache.org])/' configure.ac
+          ./autogen.des --prefix=/usr
+          sudo make install -j32
+          sudo cp varnishapi.pc /usr/lib/x86_64-linux-gnu/pkgconfig/
+      - run: |
+          set -ex
           cmake -B build
           cmake --build build/
           ctest --test-dir build/ --output-on-failure

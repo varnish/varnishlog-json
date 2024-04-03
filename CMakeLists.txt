@@ -27,7 +27,6 @@ add_custom_command(OUTPUT varnishlog-json_synopsis.rst
 # varnishlog-json.rst includes file from the build directory, so it needs to be copied over BUT
 # only if source != build, otherwise we'd copy it over itself
 if(NOT "${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
-	message(STATUS "-----------------------NOT EQUAL ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}")
 	add_custom_command(OUTPUT varnishlog-json.rst
 			   COMMAND cp "${CMAKE_CURRENT_SOURCE_DIR}/varnishlog-json.rst" "${CMAKE_CURRENT_BINARY_DIR}/varnishlog-json.rst"
 			   DEPENDS varnishlog-json varnishlog-json.rst)
