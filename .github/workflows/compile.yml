@@ -1,6 +1,16 @@
 name: Quick test
 on: [push]
 jobs:
+  docker_image:
+    runs-on: ubuntu-latest
+    steps :
+      - uses: actions/checkout@v4
+      - name: Build Dockerfile
+        run: |
+          pwd
+          ls
+          docker build -t test .
+
   build_against_packages:
     strategy:
       matrix:
@@ -8,7 +18,8 @@ jobs:
     runs-on: ubuntu-latest
     steps :
       - uses: actions/checkout@v4
-      - run: |
+      - name: Set up varnish repository and pinning
+        run: |
           set -ex
           cat << -EOF > /tmp/pref
                Package: *
@@ -26,7 +37,8 @@ jobs:
     runs-on: ubuntu-latest
     steps :
       - uses: actions/checkout@v4
-      - run: |
+      - name: Install dependencies
+        run: |
           sudo apt-get install -y \
               automake \
               cmake \
@@ -39,14 +51,16 @@ jobs:
               libpcre2-dev \
               python3-docutils \
               python3-sphinx
-      - run: |
+      - name: Build varnish
+        run: |
           git clone https://github.com/varnishcache/varnish-cache.git
           cd varnish-cache
           sed -i 's/^AC_INIT.*/AC_INIT([Varnish], ['$(date +%Y%m%d)'], [varnish-dev@varnish-cache.org])/' configure.ac
           ./autogen.des --prefix=/usr
           sudo make install -j32
           sudo cp varnishapi.pc /usr/lib/x86_64-linux-gnu/pkgconfig/
-      - run: |
+      - name: Build varnishlog-json
+        run: |
           set -ex
           cmake -B build
           cmake --build build/
