@@ -1,3 +1,5 @@
+[![tests](https://github.com/varnish/varnishlog-json/actions/workflows/compile.yml/badge.svg?branch=main)](https://github.com/varnish/varnishlog-json/actions/workflows/compile.yml)
+
 `varnishlog-json` is a simple `JSON` logger for [varnish](https://varnish-cache.org). Think of it as "`varnishlog`, but with a `JSON` output". For example:
 
 ``` shell
