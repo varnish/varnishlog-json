@@ -22,9 +22,9 @@ jobs:
         run: |
           set -ex
           cat << -EOF > /tmp/pref
-               Package: *
-               Pin: origin "packagecloud.io"
-               Pin-Priority: 999
+          Package: *
+          Pin: origin "packagecloud.io"
+          Pin-Priority: 999
           EOF
           sudo mv /tmp/pref /etc/apt/preferences.d/varnish
           curl -s https://packagecloud.io/install/repositories/varnishcache/varnish${{ matrix.version }}/script.deb.sh | sudo bash
