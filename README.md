@@ -55,6 +55,25 @@ using the `-i/-I/-x/-X` arguments.
 
 We'll use `typescript` notation to describe the object shape:
 
+169:		char *handling = "incomplete";
+233:				// don't overwrite handling if we're already erroring
+235:				if (!strcmp(handling, "fail") || !strcmp(handling, "abandon")) {
+238:					handling = "miss";
+240:					handling = "pass";
+242:					handling = "pipe";
+244:					handling = "synth";
+246:					handling = "fetched";
+248:					handling = "error";
+250:					handling = "synth";
+257:				if (!strcmp(handling, "fail") || !strcmp(handling, "abandon")) {
+260:					handling = "streaming-hit";
+262:					handling = "hit";
+274:					handling = "retry";
+276:					handling = "restart";
+278:					handling = "fail";
+280:					handling = "abandon";
+
+
 ``` typescript
 {
     req: {                                      // describes the request as seen by the remote (either client, or backend)
@@ -74,6 +93,10 @@ We'll use `typescript` notation to describe the object shape:
         hdrBytes: number,                       // ReqAcct, BereqAcct
         bodyBytes: number,                      // ^ same
     },
+    handling: "hit" | "miss" | "pass" |"pipe" |
+              "streaming-hit" | "fail" | "synth"
+              "abandon" | "fetched" | "error"
+              "retry" | "restart",              // how the request was handled
     timeline: Array<{name: string, timestamp: number}> // Timestamp
     side: "backend" | "client",
     id: string,                     // the transaction's vxid

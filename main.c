@@ -231,10 +231,9 @@ static int process_group(struct VSL_data *vsl,
 				}
 
 				// don't overwrite handling if we're already erroring
+				// we don't need to handle HIT, SLT_Hit will take care of it
 				if (!strcmp(handling, "fail") || !strcmp(handling, "abandon")) {
 					break;
-				} else if (!strcmp(data, "HIT")) {
-					handling = "hit";
 				} else if (!strcmp(data, "MISS")) {
 					handling = "miss";
 				} else if (!strcmp(data, "PASS")) {
@@ -251,6 +250,20 @@ static int process_group(struct VSL_data *vsl,
 					handling = "synth";
 				}
 				break;
+
+			case SLT_Hit: {
+				unsigned _a, _e, _f;
+				float _b, _c, _d;
+				if (!strcmp(handling, "fail") || !strcmp(handling, "abandon")) {
+					break;
+				} else if (6 == sscanf(data, "%u %f %f %f %u %u", &_a, &_b, &_c, &_d, &_e, &_f)) {
+					handling = "streaming-hit";
+				} else {
+					handling = "hit";
+				}
+				break;
+			}
+
 
 			case SLT_VCL_return:
 				if (t->type == VSL_t_bereq &&

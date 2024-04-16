@@ -1,0 +1,62 @@
+varnishtest "fail/abandon"
+
+feature cmd jq
+
+barrier b1 cond 2
+barrier b2 cond 2
+
+server s1 {
+	rxreq
+	txresp -nolen -hdr "Content-Length: 10"
+	barrier b1 sync
+	barrier b2 sync
+
+delay 0.1
+	send "0123456789"
+	txresp
+} -start
+
+varnish v1 -vcl+backend {} -start
+
+# miss
+client c1 {
+	txreq -hdr "client: c1"
+	rxresp
+} -start
+
+barrier b1 sync
+# streaming-hit
+client c2 {
+	txreq -hdr "client: c2"
+	rxresphdrs
+	barrier b2 sync
+	rxrespbody
+} -start
+
+client c1 -wait
+client c2 -wait
+
+delay 0.1
+
+# hit
+client c3 {
+	txreq -hdr "client: c3"
+	rxresp
+} -run
+
+# give some time for the logs to land (0.1s is overly generous)
+delay 0.1
+
+shell {
+	# arguments: CLIENT HANDLING EXPECTED_VALUE
+	t() {
+		set -ex
+		test $(${varnishlog-json_bin} -n ${v1_name} -d | jq -r "select(.req.headers.client[0] == \"$1\") | .handling" ) = "$2"
+	}
+
+	${varnishlog-json_bin} -c -n ${v1_name} -d
+
+	t c1 miss
+	t c2 streaming-hit
+	t c3 hit
+}
