@@ -134,6 +134,6 @@ docker build -t varnishlog-json .
 
 # Notes
 
-Contrary to `varnishlog`, `varnishlog-json` doesn't output a tree of transactions, there's only one of them per line.
+Similar to how `varnishlog` behaves, `ESI` and backend transations are ignored by default.
 
-But, similar to `varnishlog`, `ESI` and backend transations are ignored by default.
+Use `varnishlog-json -h` to list all possible options.
