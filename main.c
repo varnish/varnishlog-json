@@ -219,11 +219,7 @@ static int process_group(struct VSL_data *vsl,
 			switch (tag) {
 			case SLT_Begin:
 				VSB_clear(vsb);
-#ifdef VARNISH_PLUS
 				VSB_printf(vsb, "%u", t->vxid);
-#else
-				VSB_printf(vsb, "%lu", t->vxid);
-#endif
 				VSB_finish(vsb);
 				cJSON_AddStringToObject(transaction, "id", VSB_data(vsb));
 				break;
@@ -499,7 +495,6 @@ static int process_group(struct VSL_data *vsl,
 	return (0);
 }
 
-#ifdef VARNISH_PLUS
 static void v_noreturn_
 usage(int status)
 {
@@ -512,7 +507,6 @@ usage(int status)
 }
 
 #define VUT_Usage(a, b, ret) usage(ret)
-#endif
 
 int main(int argc, char **argv)
 {
