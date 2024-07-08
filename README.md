@@ -92,6 +92,7 @@ We'll use `typescript` notation to describe the object shape:
         rAddr: string,
         rPort: number,
         connReused: bool,
+    },
     storage?: string,               // Storage (backend-only)
     error?: string,                 // FetchError, but also if the VSL transation was incomplete
     logs: Array<string>,            // VCL_Log 
