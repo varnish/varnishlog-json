@@ -149,8 +149,83 @@ flushout(struct VUT *v)
 	return (0);
 }
 
+static int process_probe(struct VSL_data *vsl,
+    struct VSL_transaction * const trans[], void *priv)
+{
+	cJSON *t= NULL;
+	double duration;
+	const uint32_t *p;
+	enum VSL_tag_e tag;
+	const char *data, *c;
+	struct VSL_transaction *tp = NULL;
+
+	(void)vsl;
+	(void)priv;
+
+	AN(trans);
+	AN(trans[0]);
+	AZ(trans[1]);
+	tp = trans[0];
+
+	t = cJSON_CreateObject();
+
+	AN(VSL_Next(tp->c));
+	p = tp->c->rec.ptr;
+	tag = VSL_TAG(p);
+	if (tag != SLT_Backend_health) {
+		return (0);
+	}
+	data = VSL_CDATA(p);
+
+	tok_init(&c, data);
+	AN(tok_next(&c, vsb));
+	cJSON_AddStringToObject(t, "backend", VSB_data(vsb));
+	AN(tok_next(&c, vsb));
+	AN(tok_next(&c, vsb));
+	if (strcmp(VSB_data(vsb), "healthy")) {
+		cJSON_AddBoolToObject(t, "healthy", false);
+	} else {
+		cJSON_AddBoolToObject(t, "healthy", true);
+	}
+	AN(tok_next(&c, vsb));
+	assert(strlen(VSB_data(vsb)) == 8);
+	if (VSB_data(vsb)[7] == 'H') {
+		cJSON_AddBoolToObject(t, "happy", true);
+	} else {
+		cJSON_AddBoolToObject(t, "happy", false);
+	}
+	cJSON_AddStringToObject(t, "report", VSB_data(vsb));
+
+	AN(tok_next(&c, vsb));
+	AN(tok_next(&c, vsb));
+	AN(tok_next(&c, vsb));
+	AN(tok_next(&c, vsb));
+	duration = strtod(VSB_data(vsb), NULL);
+	cJSON_AddNumberToObject(t, "duration", duration);
+
+	AN(tok_next(&c, vsb));
+	while (!isspace(*c)) {
+		c++;
+	}
+	c++;
+	cJSON_AddRawToObject(t, "message", c);
+
+	AZ(VSL_Next(tp->c));
+
+	char *s;
+	if (pretty)
+		s = cJSON_Print(t);
+	else
+		s = cJSON_PrintUnformatted(t);
+	printf("%s\n", s);
+	free(s);
+	cJSON_Delete(t);
+
+	return (0);
+}
+
 static int process_group(struct VSL_data *vsl,
-		struct VSL_transaction * const trans[], void *priv)
+    struct VSL_transaction * const trans[], void *priv)
 {
 	int i;
 	bool req_done, resp_done;
@@ -516,7 +591,7 @@ usage(int status)
 
 int main(int argc, char **argv)
 {
-	int opt;
+	int opt, probe = false;
 	bool bc_set = false;
 	vut = VUT_InitProg(argc, argv, &vopt_spec);
 
@@ -533,16 +608,20 @@ int main(int argc, char **argv)
 			AN(VUT_Arg(vut, opt, NULL));
 			break;
 		case 'g':
-			if (!strcmp("vxid", optarg))
+			probe = false;
+			if (!strcmp("vxid", optarg)) {
 				arrays = false;
-			else if (!strcmp("request", optarg))
+				VUT_Arg(vut, opt, optarg);
+			} else if (!strcmp("request", optarg)) {
 				arrays = true;
-			else {
+				VUT_Arg(vut, opt, optarg);
+			} else if (!strcmp("probe", optarg)) {
+				probe = true;
+				VUT_Arg(vut, opt, "raw");
+			} else {
 				printf("Error: -g only supports \"vxid\" and \"request\"\n\n");
 				VUT_Usage(vut, &vopt_spec, 1);
 			}
-			arrays = strcmp("vxid", optarg);
-			VUT_Arg(vut, opt, optarg);
 			break;
 		case 'h':
 			VUT_Usage(vut, &vopt_spec, 0);
@@ -582,7 +661,11 @@ int main(int argc, char **argv)
 		LOG.fo = stdout;
 
 
-	vut->dispatch_f = process_group;
+	if (probe) {
+		vut->dispatch_f = process_probe;
+	} else {
+		vut->dispatch_f = process_group;
+	}
 	vut->idle_f = flushout;
 
 	vsb = VSB_new_auto();;

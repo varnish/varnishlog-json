@@ -1,0 +1,63 @@
+varnishtest "probe"
+
+feature cmd jq
+
+server s1 {
+	rxreq
+	delay 0.1
+	txresp -hdr "connection: close"
+
+	accept
+
+	rxreq
+	txresp -status 400 -hdr "connection: close"
+
+	accept
+
+	rxreq
+	txresp -status 400 -hdr "connection: close"
+} -start
+
+varnish v1 -vcl {
+	backend s1 {
+		.host = "${s1_sock}";
+		.probe = {
+			.url = "/";
+			.window = 2;
+			.threshold = 1;
+			.interval = 0.2s;
+		}
+	}
+} -start
+
+server s1 -wait
+
+shell {
+	# arguments: LINE FIELD VALUE
+	t() {
+		set -ex
+		test "$(${varnishlog-json_bin} -n ${v1_name} -d -g probe | awk "NR == $1"  | jq -r ".$2" )" = "$3"
+	}
+
+	varnishlog -n ${v1_name} -g raw -d
+	${varnishlog-json_bin} -n ${v1_name} -d -g probe 
+
+	# start at 3, we have 2 initial probes
+	t 3 backend s1
+	t 3 healthy true
+	t 3 happy true
+	t 3 report 4---X-RH
+	t 3 message "HTTP/1.1 200 OK"
+
+	t 4 backend s1
+	t 4 healthy true
+	t 4 happy false
+	t 4 report 4---X-R-
+	t 4 message "HTTP/1.1 400 OK"
+
+	t 5 backend s1
+	t 5 healthy false
+	t 5 happy false
+	t 5 report 4---X-R-
+	t 5 message "HTTP/1.1 400 OK"
+}
